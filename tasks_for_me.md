@@ -63,7 +63,7 @@
 ### What happens inside processing?
 
 1. **Read Expected & Measured Values**
- - Measured = original + noise  
+ - Measured = original + noise (Only for first loop... after measured value will be Calculated output orientation + noise) 
  - Expected = from previous output  
 
 2. **Calculate Error**
@@ -86,3 +86,8 @@
 - Use error + differential to compute control output.
 
 ---
+
+
+## **Things to Update in Current Code**
+
+- kp..., Az..., and magnitude...
