@@ -25,16 +25,10 @@ typedef struct s_pid_controller
 } t_pid_controller;
 
 
-typedef struct s_error
-{
-    double error_pitch;
-    double error_roll;
-    double error_yaw;
-} t_error;
+
 
 
 //function definitions:
-void    init_pid(t_pid_controller *pid);
-void    init_error(t_error *error);
+t_pid_controller    *init_pid(t_pid_controller *pid, int size);
 
 #endif PID_H
