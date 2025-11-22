@@ -68,25 +68,30 @@
 
 2. **Calculate Error**
 
-3. **Two-Time-Stamp Initialization**
+3. **Two-Time-Stamp Initialization with zero**
 - Steps 1 and 2 are executed **twice in the first loop**  
   → needed to get differential values.
 
 4. **Magnitude Initialization & Update**
 - Initialize:
   ```
-  magnitude = 1
+  magnitude = 1 (its basically angular acceleration in z axis)
   ```
 - Update each iteration using acceleration values.
 
 5. **Acceleration Note**
-- Only acceleration values contribute to magnitude updates.
+- Only z-axis acceleration values contribute to magnitude updates.
 
 6. **Run PD Controller**
 - Use error + differential to compute control output.
 
 ---
 
+## TASK 5 - Using Processing for all the attitude (3) simultaneously
+
+### **How do we run it simultaneously and step by step** ?
+
+---
 
 ## **Things to Update in Current Code**
 
