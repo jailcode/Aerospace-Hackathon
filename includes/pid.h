@@ -22,11 +22,21 @@ typedef struct s_pid_controller
     double simulation; // Simulation start time
 } t_pid_controller;
 
-
-
-
-
-//function definitions:
+// PID initialization functions (pid.c)
 t_pid_controller    *init_pid(t_pid_controller *pid, int size);
+int                 *init_error(int size);
 
-#endif PID_H
+// Time utility functions (time_utils.c)
+long long           get_current_time();
+long long           get_time_difference(long long old_time, long long new_time);
+
+// Calculation functions (calculations.c)
+double              calculate_magnitude(double x, double y, double z);
+double              calculate_kp(double magnitude);
+double              calculate_error(double setpoint, double current_value, double *integral);
+
+// Sensor functions (sensor.c)
+void                parse_sensor_data(double *gyro, double *accel, const char *data);
+void                wait_for_sensor_signal();
+
+#endif
