@@ -1,36 +1,42 @@
 #include "../includes/pid.h"
-
-double calculate_magnitude(double x, double y)
-{
-    return sqrt(x * x + y * y);
+// ax ay az (linear accel) Ax Ay Az(angular accel)  assuming all 6 are ready to use
+double g = 9.81; //m^2
+double delta_time(double initial_time, double final_time){
+    double delta_time = final_time - initial_time;
+    return delta_time;
 }
 
-double reduction_factor_kp(double magnitude)
-{
-    if (magnitude == 0.0)
-        return 0.0;
-    return 1.0 / magnitude;
+double delta_acceleration(double initial_velocity, double final_velocity){
+    double delta_acceleration = final_velocity - initial_velocity;
+    return delta_acceleration;
+}
+double delta_angular_position(double initial_angular_position, double final_angular_position){
+    double delta_angular_position = final_angular_position - initial_angular_position;
+    return delta_angular_position;
 }
 
-double calculate_error(double setpoint, double current_value)
-{
-    double error = current_value - setpoint;
-    return error;
+double angular_velocity(delta_angular_position, delta_time){
+    double angular_velocity = delta_angular_position / delta_time;
+    return angular_velocity;
 }
 
-double add_noise(double value, double noise_level)
-{
-    // Generate random noise between -noise_level and +noise_level
-    double noise = ((double)rand() / RAND_MAX) * 2.0 * noise_level - noise_level;
-    return value + noise;
+
+
+double delta_angular_velocity(double initial_angular_velocity, double final_angular_velocity){
+    double delta_angular_velocity = final_angular_velocity - initial_angular_velocity;
+    return delta_angular_velocity; 
+}
+double angular_acceleration(delta_angular_velocity, delta_time){
+    double angular_acceleration = delta_angular_velocity / delta_time;
 }
 
-void update_magnitude(t_attitude_state *state, double az)
-{
-    // Update magnitude based on z-axis acceleration
-    // Initialize to 1.0 if first time, otherwise update
-    if (state->magnitude == 0.0)
-        state->magnitude = 1.0;
-    else
-        state->magnitude = fabs(az);
+double magnitude_of_change(double linear_accelration){};
+
+double moment_of_inertia(){};
+double torque(){};
+double acceleration(moment_of_inertia,torque){};
+double net_force(double mass , double acceleration){
+    return mass*acceleration;
 }
+
+double drag(double fluid_density, double velocity){};//incomplete

@@ -1,14 +1,18 @@
 #include "../includes/pid.h"
 
-void parse_sensor_data(double *gyro, double *accel, const char *data)
-{
-    // Expected format: "gx,gy,gz,ax,ay,az"
-    if (sscanf(data, "%lf,%lf,%lf,%lf,%lf,%lf",
-               &gyro[0], &gyro[1], &gyro[2],
-               &accel[0], &accel[1], &accel[2]) != 6)
+void parse_sensor_data(double *gyroscope, double *accelerometer, const char *data){
+    //Ax,Ay,Az (Angular) & ax,ay,az(Linear) (linear for ax and ay is not needed)
+
+    if(sscanf(data,"%lf,%lf,%lf,%lf,%lf,%lf",
+        &gyroscope[0],&gyroscope[1],&gyroscope[2],
+        &gyroscope[3],&gyroscope[4],&gyroscope[5],
+        &accelerometer[0],&accelerometer[1],&accelerometer[2],
+        &accelerometer[3],&accelerometer[4],&accelerometer[5] != 6
+    ))
     {
-        fprintf(stderr, "Error parsing sensor data\n");
-    }
+        fprint(stderr,"Data Parsing Error");
+    };
+
 }
 
 void wait_for_sensor_signal()
