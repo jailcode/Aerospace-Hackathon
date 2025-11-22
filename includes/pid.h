@@ -31,9 +31,9 @@ long long           get_current_time();
 long long           get_time_difference(long long old_time, long long new_time);
 
 // Calculation functions (calculations.c)
-double              calculate_magnitude(double x, double y, double z);
-double              calculate_kp(double magnitude);
-double              calculate_error(double setpoint, double current_value, double *integral);
+double              calculate_magnitude(double x, double y);
+double              reduction_factor_kp(double magnitude);
+double              calculate_error(double setpoint, double current_value);
 
 // Sensor functions (sensor.c)
 void                parse_sensor_data(double *gyro, double *accel, const char *data);
