@@ -13,5 +13,5 @@ void parse_sensor_data(double *gyro, double *accel, const char *data)
 
 void wait_for_sensor_signal()
 {
-    usleep(10000); // Wait 10ms for sensor data
+    usleep(10000);
 }

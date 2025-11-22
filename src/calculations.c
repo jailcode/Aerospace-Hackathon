@@ -1,8 +1,8 @@
 #include "../includes/pid.h"
 
-double calculate_magnitude(double x, double y, double z)
+double calculate_magnitude(double x, double y)
 {
-    return sqrt(x * x + y * y + z * z);
+    return sqrt(x * x + y * y);
 }
 
 double calculate_kp(double magnitude)
