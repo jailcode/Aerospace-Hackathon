@@ -22,9 +22,34 @@ typedef struct s_pid_controller
     double simulation; // Simulation start time
 } t_pid_controller;
 
+typedef struct s_sensor_data
+{
+    double gyro[3];     // Gyroscope x, y, z
+    double accel[3];    // Accelerometer x, y, z
+} t_sensor_data;
+
+typedef struct s_actuator_output
+{
+    double gimbal_x;    // Gimbal angle X
+    double gimbal_y;    // Gimbal angle Y
+    double fin_angle;   // Fin angle
+} t_actuator_output;
+
+typedef struct s_attitude_state
+{
+    double measured[3];     // Current measured attitude (pitch, yaw, roll)
+    double expected[3];     // Expected attitude
+    double error[3];        // Error values
+    double last_error[3];   // Previous error for derivative
+    double magnitude;       // Angular acceleration magnitude (z-axis)
+    long long timestamp[2]; // Current and previous timestamps
+} t_attitude_state;
+
 // PID initialization functions (pid.c)
 t_pid_controller    *init_pid(t_pid_controller *pid, int size);
 int                 *init_error(int size);
+t_attitude_state    *init_attitude_state();
+double              pd_controller(double error, double derivative, double Kp, double Kd);
 
 // Time utility functions (time_utils.c)
 long long           get_current_time();
@@ -34,9 +59,19 @@ long long           get_time_difference(long long old_time, long long new_time);
 double              calculate_magnitude(double x, double y);
 double              reduction_factor_kp(double magnitude);
 double              calculate_error(double setpoint, double current_value);
+double              add_noise(double value, double noise_level);
+void                update_magnitude(t_attitude_state *state, double az);
 
 // Sensor functions (sensor.c)
 void                parse_sensor_data(double *gyro, double *accel, const char *data);
 void                wait_for_sensor_signal();
+int                 read_sensor_line(FILE *gyro_file, FILE *accel_file, t_sensor_data *data);
+FILE                *open_sensor_file(const char *filename, const char *mode);
+
+// Processing functions (processing.c)
+void                process_attitude(t_attitude_state *state, t_sensor_data *sensor, 
+                                    t_pid_controller *pid, t_actuator_output *output, int first_loop);
+void                write_output(FILE *output_file, t_actuator_output *output);
+void                run_control_loop();
 
 #endif
