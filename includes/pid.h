@@ -1,4 +1,5 @@
-
+#ifndef PID_H
+#define PID_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +8,6 @@
 #include <time.h>
 #include <math.h>
 #include <fcntl.h>
-
-#ifndef PID_H
-#define PID_H
 
 typedef struct s_pid_controller
 {
