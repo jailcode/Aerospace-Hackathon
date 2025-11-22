@@ -1,0 +1,16 @@
+# Build artifacts
+*.o
+app
+
+# Editor files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+
+# CodeQL
+_codeql_detected_source_root
