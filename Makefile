@@ -2,8 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Iincludes
 
 SRC = $(wildcard src/*.c)
-INC = $(wildcard includes/*.c)
-OBJ = $(SRC:.c=.o) $(INC:.c=.o)
+OBJ = $(SRC:.c=.o)
 
 TARGET = app
 
@@ -16,8 +15,11 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(OBJ)
 
-re: clean all
+fclean: clean
+	rm -f $(TARGET)
 
-.PHONY: all clean re
+re: fclean all
+
+.PHONY: all clean fclean re
