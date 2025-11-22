@@ -1,9 +1,11 @@
 #include "../includes/pid.h"
+#include <stdio.h>
+#include <math.h>
 
-double calculate_magnitude(double x, double y)
+/*double calculate_magnitude(double x, double y)
 {
     return sqrt(x * x + y * y);
-}
+}*/
 
 double reduction_factor_kp(double magnitude)
 {
