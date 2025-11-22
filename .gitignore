@@ -11,3 +11,6 @@ app
 # IDE files
 .vscode/
 .idea/
+
+# CodeQL
+_codeql_detected_source_root
