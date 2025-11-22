@@ -1,7 +1,7 @@
 #include "../includes/pid.h"
 
 
-long long get_current_time()
+double get_current_time()
 {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -46,9 +46,9 @@ int main(void)
 
     error = init_error(3);
     pid = init_pid(pid, 3);
-    long long time = get_current_time();
+    double current_time = get_current_time();
     printf("error: %d %d %d\n", error[0], error[1], error[2]);
-    printf("time: %lld\n", time);
+    printf("time: %.2f\n", current_time);
 
     return (0);
 }

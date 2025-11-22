@@ -29,4 +29,4 @@ typedef struct s_pid_controller
 //function definitions:
 t_pid_controller    *init_pid(t_pid_controller *pid, int size);
 
-#endif PID_H
+#endif
