@@ -32,8 +32,18 @@ double angular_acceleration(delta_angular_velocity, delta_time){
 
 double magnitude_of_change(double linear_accelration){};
 
+double thrust_applied_from_motor(){};
+
+double center_of_mass_calculation(){
+    
+}
+
 double moment_of_inertia(){};
-double torque(){};
+double torque(angular_acceleration){
+
+    double torque = angular_acceleration * 
+
+};
 double acceleration(moment_of_inertia,torque){};
 double net_force(double mass , double acceleration){
     return mass*acceleration;
