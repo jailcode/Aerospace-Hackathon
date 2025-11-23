@@ -15,7 +15,7 @@ int count = 0;
 
 // PID gains
 double	Kp = 1.0f; //proportional
-double	Ki = 0.0f; //integral
+double	Ki = 1.0f; //integral
 double	Kd = 0.1f; //derivative
 
 double	angle_Kp = 1.0;
@@ -141,7 +141,7 @@ void	run_inner_loop(float delta_time)
 			angle_error = outer_setpoint[current_axis] - angle;
 			inner_setpoint[current_axis] = angle_Kp * angle_error;
 			
-            rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]);
+            rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]); //angular velo
 			u = PID(current_axis, inner_setpoint[current_axis], rate_measurement, delta_time);
 			
             if (current_axis == 0)
