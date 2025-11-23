@@ -12,9 +12,9 @@ double	thrust = 7890; // N
 int count = 0;
 
 // PID gains
-double	Kp = 1.0f; //proportional
-double	Ki = 0.0f; //integral
-double	Kd = 0.2f; //derivative
+double	Kp[3]= {1.0,1.0,1.0}; //proportional
+double	Ki[3]= {0.0,0.0,0.0}; //integral
+double	Kd[3]= {0.2,0.2,0.2}; //derivative
 
 double	angle_Kp = 1.0;
 
@@ -43,13 +43,13 @@ double	PID(int current_axis, double setpoint, double measurement, double delta_t
 	double	D;
 
 	current_error = setpoint - measurement;
-	P = Kp * current_error;
+	P = Kp[current_axis] * current_error;
 	integral[current_axis] += current_error * delta_time;
-	I = Ki * integral[current_axis];
+	I = Ki[current_axis] * integral[current_axis];
     integral_windup(current_axis, integral_max);
 	derivative = (current_error - previous_error[current_axis]) / fmax(delta_time, 1e-6);
     saturation_check(derivative, 1000.0); // to avoid extreme derivative spikes
-	D = Kd * derivative;
+	D = Kd[current_axis] * derivative;
 	previous_error[current_axis] = current_error;
 	return (P + I + D);
 }
@@ -87,6 +87,8 @@ double	apply_filter_gyro(int current_axis, double measurement)
 		* measurement;
 	return (filtered_gyro[current_axis]);
 }
+
+
 
 double	saturation_check(double theta, double theta_max)
 {
@@ -159,7 +161,7 @@ void	run_loop(float delta_time)
     open_files(&gyro_file, &accel_file); // opens the sensor files
 
 	FILE *plotter = fopen("results.csv","w");
-	fprintf(plotter,"axis,iteration,gyro_measurement,rate_command,gimbal_axis,desired_angular_acceleration,actuator_command\n");
+	fprintf(plotter,"axis,iteration,gyro_measurement,inner_setpoint,gimbal_axis,desired_angular_acceleration,actuator_command\n");
 
 	while (read_sensor_line(gyro_file, accel_file, &data))
 	{	
@@ -175,7 +177,9 @@ void	run_loop(float delta_time)
 
             rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]);
 			desired_angular_acceleration = PID(current_axis, inner_setpoint[current_axis], rate_measurement, delta_time);
-			
+			if (current_axis == 1){
+				rate_measurement = apply_filter_gyro(current_axis,rate_measurement) * 10.0;
+			}
             gimbal_angle = calculate_gimbal_angle(desired_angular_acceleration, current_axis);
             actuator_command = normalise(gimbal_angle, MAX_u_value, -1, 1);
 			//u = saturation_check(u, MAX_u_value);
