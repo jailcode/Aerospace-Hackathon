@@ -14,7 +14,7 @@ int count = 0;
 // PID gains
 double	Kp[3]= {1.0,1.0,1.0}; //proportional
 double	Ki[3]= {0.0,0.0,0.0}; //integral
-double	Kd[3]= {0.2,0.2,0.2}; //derivative
+double	Kd[3]= {0.5,0.5,0.5}; //derivative
 
 double	angle_Kp = 1.0;
 
@@ -178,7 +178,17 @@ void	run_loop(float delta_time)
             rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]);
 			desired_angular_acceleration = PID(current_axis, inner_setpoint[current_axis], rate_measurement, delta_time);
 			if (current_axis == 1){
-				rate_measurement = apply_filter_gyro(current_axis,rate_measurement) * 10.0;
+				rate_measurement = apply_filter_gyro(current_axis,rate_measurement) * 10;
+				desired_angular_acceleration *= 10;
+			}
+
+			else if (current_axis == 0){
+				rate_measurement /= 10;
+				desired_angular_acceleration *= 10;
+			}
+
+			else{
+				rate_measurement = apply_filter_gyro(current_axis,rate_measurement) * 10;
 			}
             gimbal_angle = calculate_gimbal_angle(desired_angular_acceleration, current_axis);
             actuator_command = normalise(gimbal_angle, MAX_u_value, -1, 1);
@@ -204,7 +214,7 @@ void	run_loop(float delta_time)
 			differential(rate_measurement,current_axis);
 
 		}
-		usleep((unsigned int)(delta_time * 1000000));
+		usleep((unsigned int)(delta_time * 100000));
 		count++;
 
 	}
