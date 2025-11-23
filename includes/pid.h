@@ -24,8 +24,8 @@ typedef struct s_pid_controller
 
 typedef struct s_sensor_data
 {
-    double gyro[3];     // Gyroscope x, y, z
-    double accel[3];    // Accelerometer x, y, z
+    double gyro[6];     // Gyroscope x, y, z
+    double accel[6];    // Accelerometer x, y, z
 } t_sensor_data;
 
 typedef struct s_actuator_output
