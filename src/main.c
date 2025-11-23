@@ -14,7 +14,7 @@ int count = 0;
 // PID gains
 double	Kp = 1.0f; //proportional
 double	Ki = 0.0f; //integral
-double	Kd = 0.1f; //derivative
+double	Kd = 0.2f; //derivative
 
 double	angle_Kp = 1.0;
 
@@ -45,9 +45,10 @@ double	PID(int current_axis, double setpoint, double measurement, double delta_t
 	current_error = setpoint - measurement;
 	P = Kp * current_error;
 	integral[current_axis] += current_error * delta_time;
-	integral_windup(current_axis, integral_max);
 	I = Ki * integral[current_axis];
+    integral_windup(current_axis, integral_max);
 	derivative = (current_error - previous_error[current_axis]) / fmax(delta_time, 1e-6);
+    saturation_check(derivative, 1000.0); // to avoid extreme derivative spikes
 	D = Kd * derivative;
 	previous_error[current_axis] = current_error;
 	return (P + I + D);
@@ -158,7 +159,7 @@ void	run_loop(float delta_time)
     open_files(&gyro_file, &accel_file); // opens the sensor files
 
 	FILE *plotter = fopen("results.csv","w");
-	fprintf(plotter,"axis,iteration,gyro_measurement,rate_command,gimbal_axis,server_motorized\n");
+	fprintf(plotter,"axis,iteration,gyro_measurement,rate_command,gimbal_axis,desired_angular_acceleration,actuator_command\n");
 
 	while (read_sensor_line(gyro_file, accel_file, &data))
 	{	
@@ -179,10 +180,23 @@ void	run_loop(float delta_time)
             actuator_command = normalise(gimbal_angle, MAX_u_value, -1, 1);
 			//u = saturation_check(u, MAX_u_value);
 
-			printf("Axis %d: gyro measurement: %f rate command: %f gimbal angle: %f servo normalized: %f\n", current_axis, rate_measurement,
-				inner_setpoint[current_axis], gimbal_angle, actuator_command);
-
-			fprintf(plotter,"%d,%d,%f,%f,%f,%f\n", current_axis, count, rate_measurement, inner_setpoint[current_axis],gimbal_angle, desired_angular_acceleration);
+			printf("%d,%d,%f,%f,%f,%f,%f\n",
+                current_axis,                   // axis
+                count,                          // iteration
+                rate_measurement,               // gyro_measurement
+                inner_setpoint[current_axis],   // rate_command
+                gimbal_angle,                   // gimbal_axis
+                desired_angular_acceleration,   // calculated angular acceleration
+                actuator_command);              // normalized servo / motor command
+        
+            fprintf(plotter,"%d,%d,%f,%f,%f,%f,%f\n",
+                current_axis,
+                count,
+                rate_measurement,
+                inner_setpoint[current_axis],
+                gimbal_angle,
+                desired_angular_acceleration,
+                actuator_command * 10.0);
 			differential(rate_measurement,current_axis);
 
 		}
