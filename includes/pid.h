@@ -24,8 +24,8 @@ typedef struct s_pid_controller
 
 typedef struct s_sensor_data
 {
-    double gyro[3];     // Gyroscope x, y, z
-    double accel[3];    // Accelerometer x, y, z
+    double gyro[6];     // Gyroscope x, y, z
+    double accel[6];    // Accelerometer x, y, z
 } t_sensor_data;
 
 typedef struct s_actuator_output
@@ -56,12 +56,13 @@ long long           get_current_time();
 long long           get_time_difference(long long old_time, long long new_time);
 
 // Calculation functions (calculations.c)
-double              calculate_magnitude(double x, double y);
-double              reduction_factor_kp(double magnitude);
-double              calculate_error(double setpoint, double current_value);
-double              add_noise(double value, double noise_level);
-void                update_magnitude(t_attitude_state *state, double az);
 
+double delta_time(double initial_time, double final_time);
+double delta_acceleration(double initial_velocity, double final_velocity);
+double delta_angular_position(double initial_angular_position, double final_angular_position);
+double angular_velocity(double delta_angular_position, double delta_time);
+double delta_angular_velocity(double initial_angular_velocity, double final_angular_velocity);
+double angular_acceleration(double delta_angular_velocity, double delta_time);
 // Sensor functions (sensor.c)
 void                parse_sensor_data(double *gyro, double *accel, const char *data);
 void                wait_for_sensor_signal();
