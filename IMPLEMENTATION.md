@@ -1,196 +1,550 @@
-# Rocket Ascent Vector Control System
+# Rocket Ascent Vector Control System - Technical Implementation
 
 ## Overview
-This project implements a real-time Thrust Vector Control (TVC) system for rocket ascent guidance using a PD (Proportional-Derivative) controller. The system processes gyroscope and accelerometer data to generate stable actuator commands for rocket attitude control.
 
-## Architecture
+This project implements a **Cascaded PID Control System** for rocket Thrust Vector Control (TVC) using a two-loop architecture commonly used in aerospace applications:
+- **Outer Loop (Slow):** Attitude angle control
+- **Inner Loop (Fast):** Angular rate control with gimbal actuator commands
 
-### Control Method: Direct TVC with Gimbals and Fin Tabs
-- **2 Gimbal Actuators**: Control pitch (X-axis) and yaw (Y-axis)
-- **1 Fin Actuator**: Controls roll (Z-axis)
+**Developed for:** Momentum Aerospace Hackathon Challenge  
+**Control Architecture:** Cascaded PID with torque-to-gimbal angle conversion  
+**Programming Language:** C  
+**Real-time Performance:** Configurable time step (default: 0.1s / 10 Hz)
 
-### Control Algorithm: PD Controller
-- **Proportional (Kp)**: 0.1 (with magnitude-based reduction factor)
-- **Derivative (Kd)**: 0.05
-- Output saturation: ±10 degrees for stability
+---
 
-## System Components
+## System Architecture
 
-### File Structure
+### Cascaded Control Loop Structure
+
 ```
-src/
-├── main.c          - Main entry point and control loop initialization
-├── pid.c           - PID controller initialization and PD computation
-├── processing.c    - Main processing loop and attitude control logic
-├── sensor.c        - Sensor data reading and parsing
-├── time_utils.c    - Time utilities for real-time processing
-└── calculations.c  - Mathematical utilities (magnitude, error, noise)
-
-includes/
-└── pid.h          - Type definitions and function declarations
-
-Input Files:
-├── gyroscope.txt      - Angle measurements (pitch, yaw, roll)
-└── accelerometer.txt  - Angular acceleration data
-
-Output:
-└── output.txt        - Actuator commands (gimbal_x, gimbal_y, fin_angle)
+┌──────────────────────────────────────────────────────────────┐
+│                   OUTER LOOP (Angle Control)                 │
+│                                                              │
+│  outer_setpoint[3] = {0, 0, 0}  ────► angle_error            │
+│                                        ▼                     │
+│                              angle_Kp × angle_error          │
+│                                        ▼                     │
+│                              inner_setpoint (rate command)   │
+└─────────────────────────────┬────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   INNER LOOP (Rate Control)                  │
+│                                                              │
+│  Sensor Reading (Gyro + Accel)                               │
+│            │                                                 │
+│            ▼                                                 │
+│  Low-pass Filter (α=0.7)                                     │
+│            │                                                 │
+│            ▼                                                 │
+│  PID Controller (rate_measurement → u)                       │
+│            │                                                 │
+│            ▼                                                 │
+│  Torque-to-Gimbal Angle Conversion                           │
+│            │                                                 │
+│            ▼                                                 │
+│  Normalization & Saturation                                  │
+│            │                                                 │
+│            ▼                                                 │
+│  Servo Commands [-1, 1]                                      │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-## Key Features
+---
 
-### 1. **Simultaneous 3-Axis Processing**
-All three attitude axes (pitch, yaw, roll) are processed in parallel during each control cycle.
+## Key Components
 
-### 2. **Sensor Data Processing**
-- Reads gyroscope and accelerometer data line-by-line simultaneously
-- Adds realistic sensor noise (±0.001 for simulation)
-- Gyroscope provides angle measurements (degrees)
-- Accelerometer provides angular acceleration (rad/s²)
-
-### 3. **Error Calculation**
-```
-error = expected_attitude - measured_attitude
-```
-Target attitude is 0° (vertical stabilization)
-
-### 4. **Magnitude Tracking**
-- Initialized to 1.0
-- Updated using Z-axis acceleration values
-- Used for Kp reduction factor: `Kp_effective = 1/magnitude`
-
-### 5. **Two-Timestamp Initialization**
-The first loop executes twice to:
-- Establish initial error values
-- Enable derivative calculation (requires error difference)
-
-### 6. **PD Control Output**
-```
-control_output = Kp * error + Kd * derivative
-```
-where `derivative = (error - last_error) / dt`
-
-### 7. **Output Saturation**
-Control outputs clamped to ±10° to prevent actuator damage and maintain stability.
-
-## Implementation Details
-
-### Data Structures
+### 1. Physical Parameters
 
 ```c
-typedef struct s_attitude_state
-{
-    double measured[3];     // Current attitude (pitch, yaw, roll)
-    double expected[3];     // Target attitude (0 for stabilization)
-    double error[3];        // Error values
-    double last_error[3];   // Previous error for derivative
-    double magnitude;       // Angular acceleration magnitude
-    long long timestamp[2]; // Current and previous timestamps
-} t_attitude_state;
-
-typedef struct s_actuator_output
-{
-    double gimbal_x;    // Gimbal angle X (pitch control)
-    double gimbal_y;    // Gimbal angle Y (yaw control)
-    double fin_angle;   // Fin angle (roll control)
-} t_actuator_output;
+// Rocket Physical Properties
+double thrust = 7890;          // N - Motor thrust
+double Ixx = 13.452;           // kg⋅m² - Pitch moment of inertia
+double Iyy = 13.452;           // kg⋅m² - Yaw moment of inertia  
+double Izz = 0.847;            // kg⋅m² - Roll moment of inertia
+double h_COM = 0.561;          // m - Distance from gimbal to center of mass
+double theta_max = 0.1;        // rad - Maximum gimbal deflection (≈5.7°)
+double MAX_u_value = 10.0;     // Maximum control signal value
 ```
 
-### Processing Loop
+**Note:** These are example values. Replace with your actual rocket specifications.
 
-1. **Read sensor data** from input files
-2. **Update timestamps** for derivative calculation
-3. **Add noise** to measured values (realistic sensor simulation)
-4. **Calculate errors** for all 3 axes
-5. **Compute derivatives** from error differences
-6. **Run PD controller** for each axis
-7. **Saturate outputs** to safe limits
-8. **Write actuator commands** to output file
-9. **Update state** for next iteration
-10. **Repeat** until all sensor data processed
-
-## Hardware Integration (HITL Preparation)
-
-### PCB Interface Requirements
+### 2. PID Controller Parameters
 
 ```c
-// Recommended pin mapping for hardware interface:
-// - SPI/I2C for IMU (gyro + accel)
-// - PWM outputs for servo actuators
-// - ADC for feedback sensors
-// - UART for telemetry
+// PID Gains
+double Kp = 1.0;               // Proportional gain
+double Ki = 0.0;               // Integral gain (currently disabled)
+double Kd = 0.1;               // Derivative gain
 
-// Sample interface functions:
-void read_imu_data(t_sensor_data *data);
-void set_actuator_pwm(t_actuator_output *output);
-void send_telemetry(t_actuator_output *output, t_attitude_state *state);
+// Outer loop gain
+double angle_Kp = 1.0;         // Angle-to-rate conversion gain
+
+// Integral anti-windup
+double integral_max = 5.0;     // Maximum integral accumulation
 ```
 
-### Timing Considerations
-- Control loop: 10ms cycle time (100Hz)
-- Sensor sampling: Synchronized read from gyro + accel
-- Real-time constraints: Processing must complete within cycle time
+### 3. Sensor Filtering
 
-## Build and Run
+```c
+// Low-pass filter for gyroscope data
+double alpha = 0.7;            // Filter coefficient (0-1)
+```
+- Higher α = more filtering (smoother but slower response)
+- Lower α = less filtering (faster but noisier response)
 
-### Compilation
+---
+
+## Control Algorithm
+
+### Outer Loop: Attitude Control
+
+The outer loop converts angle errors to rate commands:
+
+```c
+// For each axis (pitch, yaw, roll)
+angle = data.accel[current_axis];                     // Current angle from sensor
+angle_error = outer_setpoint[current_axis] - angle;  // Error calculation
+inner_setpoint[current_axis] = angle_Kp * angle_error; // Rate command
+```
+
+**Purpose:** Maintains desired rocket orientation (typically vertical: 0°, 0°, 0°)
+
+### Inner Loop: Rate Control
+
+The inner loop implements a full PID controller:
+
+```c
+double PID(int current_axis, double setpoint, double measurement, double delta_time)
+{
+    // Calculate error
+    double current_error = setpoint - measurement;
+    
+    // Proportional term
+    double P = Kp * current_error;
+    
+    // Integral term (with anti-windup)
+    integral[current_axis] += current_error * delta_time;
+    integral_windup(current_axis, integral_max);
+    double I = Ki * integral[current_axis];
+    
+    // Derivative term
+    double derivative = (current_error - previous_error[current_axis]) 
+                       / fmax(delta_time, 1e-6);
+    double D = Kd * derivative;
+    
+    // Store error for next iteration
+    previous_error[current_axis] = current_error;
+    
+    return (P + I + D);
+}
+```
+
+**Key Features:**
+- **Anti-windup:** Prevents integral term from growing unbounded
+- **Derivative protection:** Uses `fmax(delta_time, 1e-6)` to prevent division by zero
+- **Per-axis state:** Separate integral and previous error for each axis
+
+### Sensor Filtering
+
+Applies exponential moving average to gyroscope readings:
+
+```c
+double apply_filter_gyro(int current_axis, double measurement)
+{
+    filtered_gyro[current_axis] = alpha * filtered_gyro[current_axis] 
+                                  + (1 - alpha) * measurement;
+    return filtered_gyro[current_axis];
+}
+```
+
+**Formula:** `y[n] = α × y[n-1] + (1-α) × x[n]`
+
+---
+
+## Torque-to-Gimbal Angle Conversion
+
+### Physics
+
+The gimbal produces torque through thrust vectoring:
+
+```
+τ_required = α × I        (Torque = Angular Acceleration × Moment of Inertia)
+τ_gimbal = T × h × sin(θ)  (Torque = Thrust × Moment Arm × sin(Gimbal Angle))
+```
+
+Solving for gimbal angle:
+
+```
+θ = arcsin(τ_required / (T × h))
+```
+
+### Implementation
+
+```c
+double torque_to_gimbal_angle(double expected_alpha, double current_axis_MOI)
+{
+    // Calculate required torque
+    double tau_required = expected_alpha * current_axis_MOI;
+    
+    // Calculate gimbal angle: θ = arcsin(τ / (thrust × h_COM))
+    double theta = asin(fmax(fmin(tau_required / (thrust * h_COM), 1.0), -1.0));
+    
+    // Apply saturation
+    theta = saturation_check(theta, theta_max);
+    
+    return theta;
+}
+```
+
+**Safety Features:**
+- `fmax(fmin(...))`: Clamps input to arcsin domain [-1, 1]
+- `saturation_check()`: Limits output to ±theta_max
+
+---
+
+## Normalization & Saturation
+
+### Normalization
+
+Converts control signal to servo range:
+
+```c
+double normalise(double u, double max_value, double lowerlimit, double upperlimit)
+{
+    // Saturate input
+    if (u > max_value) u = max_value;
+    if (u < -max_value) u = -max_value;
+    
+    // Normalize to [-1, 1]
+    double normalized = u / max_value;
+    
+    // Map to custom range if needed
+    if (lowerlimit != -1 || upperlimit != 1)
+        normalized = lowerlimit + (normalized + 1.0) * (upperlimit - lowerlimit) / 2.0;
+    
+    return normalized;
+}
+```
+
+**Default Output:** [-1, 1] for servo PWM control
+
+---
+
+## Data Structures
+
+### Sensor Data
+
+```c
+typedef struct s_sensor_data
+{
+    double gyro[6];    // Angular rates: [pitch, yaw, roll, reserved...]
+    double accel[6];   // Angular positions: [pitch, yaw, roll, reserved...]
+} t_sensor_data;
+```
+
+**File Format:**
+- `gyroscope.txt`: 3 values per line (angular rates in rad/s or deg/s)
+- `accelerometer.txt`: 3 values per line (angular positions in degrees)
+
+---
+
+## Main Control Loop
+
+```c
+void run_inner_loop(float delta_time)
+{
+    // Open input files
+    FILE *gyro_file = open_sensor_file("gyroscope.txt", "r");
+    FILE *accel_file = open_sensor_file("accelerometer.txt", "r");
+    FILE *plotter = fopen("results.csv", "w");
+    
+    // CSV header
+    fprintf(plotter, "axis,iteration,gyro_measurement,rate_command,gimbal_axis,server_motorized\n");
+    
+    // Main loop
+    while (read_sensor_line(gyro_file, accel_file, &data))
+    {
+        for (int current_axis = 0; current_axis < 3; current_axis++)
+        {
+            // 1. Outer loop: Angle error → Rate command
+            angle = data.accel[current_axis];
+            angle_error = outer_setpoint[current_axis] - angle;
+            inner_setpoint[current_axis] = angle_Kp * angle_error;
+            
+            // 2. Filter sensor data
+            rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]);
+            
+            // 3. Inner loop: PID control
+            u = PID(current_axis, inner_setpoint[current_axis], 
+                    rate_measurement, delta_time);
+            
+            // 4. Convert to gimbal angle
+            if (current_axis == 0)
+                gimbal_angle = torque_to_gimbal_angle(u, Ixx);
+            else if (current_axis == 1)
+                gimbal_angle = torque_to_gimbal_angle(u, Iyy);
+            else 
+                gimbal_angle = torque_to_gimbal_angle(u, Izz);
+            
+            // 5. Normalize for servo
+            u = normalise(gimbal_angle, MAX_u_value, -1, 1);
+            
+            // 6. Log data
+            fprintf(plotter, "%d,%d,%f,%f,%f,%f\n", 
+                   current_axis, count, rate_measurement, 
+                   inner_setpoint[current_axis], gimbal_angle, u);
+        }
+        
+        // Wait for next time step
+        usleep((unsigned int)(delta_time * 1000000));
+        count++;
+    }
+}
+```
+
+### Loop Execution Flow
+
+1. **Read Sensors:** Get gyro (rates) and accelerometer (angles)
+2. **Outer Loop:** Calculate angle error → rate command
+3. **Filter:** Apply low-pass filter to gyro data
+4. **Inner Loop:** PID control on rate error
+5. **Convert to Gimbal:** Torque-to-angle conversion
+6. **Normalize:** Scale to servo range [-1, 1]
+7. **Log & Output:** Write to CSV for analysis
+8. **Sleep:** Wait for next time step
+
+---
+
+## Output Files
+
+### results.csv
+
+```csv
+axis,iteration,gyro_measurement,rate_command,gimbal_axis,server_motorized
+0,0,0.005000,-0.000100,0.000001,-0.000000
+0,1,0.010000,-0.000150,0.000002,-0.000000
+...
+```
+
+**Columns:**
+- `axis`: 0=Pitch, 1=Yaw, 2=Roll
+- `iteration`: Loop count
+- `gyro_measurement`: Filtered angular rate (rad/s)
+- `rate_command`: Inner loop setpoint (rad/s)
+- `gimbal_axis`: Commanded gimbal angle (radians)
+- `server_motorized`: Normalized servo command [-1, 1]
+
+---
+
+## Tuning Guidelines
+
+### If System Oscillates:
+1. **Decrease Kd** (reduce derivative gain)
+2. **Decrease Kp** (reduce proportional gain)
+3. **Increase alpha** (more filtering, slower response)
+4. **Decrease angle_Kp** (slower outer loop)
+
+### If Response is Too Slow:
+1. **Increase Kp** (faster response to error)
+2. **Decrease alpha** (less filtering)
+3. **Increase angle_Kp** (faster outer loop)
+
+### If Steady-State Error Exists:
+1. **Increase Ki** (enable integral term)
+2. **Ensure integral_max is appropriate**
+
+### General Tuning Process:
+1. Start with Ki = 0 (PD controller)
+2. Increase Kp until slight oscillation
+3. Reduce Kp by 20-30%
+4. Add Kd to dampen oscillations
+5. Add Ki if steady-state error remains
+
+---
+
+## File Structure
+
+```
+Aerospace-Hackathon/
+├── src/
+│   ├── main.c              # Main control loop & PID implementation
+│   ├── sensor.c            # File I/O for gyro & accelerometer
+│   ├── calculations.c      # Physics calculations (torque, thrust, etc.)
+│   ├── time_utils.c        # Time utilities
+│   ├── pid.c               # PID initialization (not used in current impl)
+│   ├── processing.c        # Alternative processing logic (commented out)
+│   └── test_script.c       # Differential test function
+├── includes/
+│   └── pid.h               # Type definitions & function declarations
+├── gyroscope.txt           # Input: Angular rates
+├── accelerometer.txt       # Input: Angular positions
+├── results.csv             # Output: Control system data
+├── Makefile                # Build system
+├── README.md               # Project documentation
+└── IMPLEMENTATION.md       # This file
+```
+
+---
+
+## Compilation & Execution
+
 ```bash
+# Clean previous build
 make clean
+
+# Compile
 make
-```
 
-### Execution
-```bash
+# Run with default settings
 ./app
+
+# Output will be written to results.csv
 ```
 
-### Expected Output
+---
+
+## Validation & Testing
+
+### differential() Function
+
+Used for gain tuning validation:
+
+```c
+void differential(double current, double expected)
+{
+    double differential = current + expected;
+    if (differential > 1)
+        printf("Gain is too low\n");
+    else if (differential < -1)
+        printf("Gain is too high\n");
+    else
+        printf("Test Succeeded\n");
+}
 ```
-==============================================
-  Rocket Ascent Vector Control System
-  TVC PD Controller with Real-time Processing
-==============================================
 
-Starting control loop...
-Iteration | Gimbal X | Gimbal Y | Fin Angle | Magnitude
-----------|----------|----------|-----------|----------
-        0 |  -0.0000 |  -0.0001 |    0.0001 |    9.8100
-        1 |  -0.4290 |  -0.2061 |   -0.0907 |    9.8200
-        ...
+Called after each axis calculation to verify control signal magnitude.
+
+---
+
+## Hardware Integration
+
+### Required Interfaces
+
+**Sensors:**
+- IMU with gyroscope (3-axis angular rate)
+- IMU with accelerometer (3-axis angle measurement)
+- I2C or SPI interface
+
+**Actuators:**
+- 2× Gimbal servos (pitch, yaw)
+- 1× Fin servo or reaction wheel (roll)
+- PWM interface (50-400 Hz)
+
+### Sample Hardware Mapping
+
+```c
+// Read from hardware IMU
+void read_hardware_sensors(t_sensor_data *data)
+{
+    i2c_read_mpu6050(&data->gyro, &data->accel);
+}
+
+// Write to hardware servos
+void write_hardware_actuators(double gimbal_x, double gimbal_y, double fin)
+{
+    pwm_write(SERVO_CHANNEL_1, servo_angle_to_pwm(gimbal_x));
+    pwm_write(SERVO_CHANNEL_2, servo_angle_to_pwm(gimbal_y));
+    pwm_write(SERVO_CHANNEL_3, servo_angle_to_pwm(fin));
+}
 ```
 
-## Results
+---
 
-The system successfully:
-- ✅ Generates stable actuator commands
-- ✅ Processes 3 axes simultaneously
-- ✅ Implements PD control with proper derivative calculation
-- ✅ Handles sensor noise realistically
-- ✅ Outputs commands to file for analysis
-- ✅ Maintains stability without oscillation
-- ✅ Ready for HITL integration with hardware PCB
+## Physical Rocket Parameters
 
-## Engineering Decisions
+### How to Determine Your Values
 
-1. **PD over PID**: Derivative term sufficient for damping; integral would add complexity without significant benefit for fast ascent phase
+**Moment of Inertia (I):**
+1. Use CAD software (SolidWorks, Fusion360) with material properties
+2. Or calculate for cylinder: `I = (1/12) × m × L² + (1/4) × m × r²`
+3. Or measure experimentally with torsion pendulum
 
-2. **Output Saturation**: Physical actuator limits (±10°) prevent damage and maintain linear operating region
+**Moment Arm (h_COM):**
+1. Find center of mass by balancing rocket
+2. Measure distance from gimbal pivot to COM
+3. This is your h_COM value
 
-3. **Noise Addition**: Simulates real sensor imperfections (0.001° noise level based on typical MEMS gyro specs)
+**Maximum Gimbal Angle (theta_max):**
+1. Measure physical gimbal limits
+2. Start conservative (5-10°)
+3. Increase based on testing
 
-4. **Magnitude-based Kp**: Reduces gain at high acceleration to prevent overcorrection during high-G maneuvers
+**Thrust:**
+1. Check motor datasheet
+2. Or measure with load cell
+3. Account for variations during flight
 
-5. **Separate Files**: Modular architecture enables easy hardware integration and testing
+---
 
-## Future Enhancements
+## Advanced Topics
 
-- Add telemetry output for ground station monitoring
-- Implement trajectory tracking (non-zero target attitudes)
-- Add integral term for steady-state error correction
-- Kalman filter for sensor fusion
-- Hardware SPI/I2C drivers for actual IMU
-- PWM servo control implementation
+### Why Cascaded Control?
 
-## Author
-Developed for Momentum Aerospace Hackathon Challenge
-Control Architecture: Direct TVC with PD Controller
+**Benefits:**
+1. **Separation of Concerns:** Angle control vs. rate control
+2. **Faster Inner Loop:** Rate control responds quickly to disturbances
+3. **Stability:** Easier to tune than single-loop system
+4. **Real-world Standard:** Used in quadcopters, aircraft, rockets
+
+### Control Frequencies
+
+- **Outer Loop (Angle):** 10-50 Hz
+- **Inner Loop (Rate):** 100-1000 Hz
+
+Current implementation runs both at same rate (configurable delta_time).
+For optimal performance, inner loop should run 10× faster than outer loop.
+
+---
+
+## Limitations & Future Work
+
+**Current Limitations:**
+- Integral term disabled (Ki = 0)
+- Same loop frequency for inner/outer
+- File-based I/O (not real-time hardware)
+
+**Future Improvements:**
+1. Enable integral control with proper tuning
+2. Implement separate loop frequencies
+3. Add Kalman filter for sensor fusion
+4. Implement feed-forward control
+5. Add trajectory tracking (non-zero setpoints)
+6. Real-time hardware integration
+
+---
+
+## Contributors
+
+This project was developed collaboratively during the Aerospace Hackathon:
+
+- **Tanmay Pandya** ([@tpandya42](https://github.com/tpandya42)) - Control systems design and implementation
+- **Anirudh Agarwal** ([@AnirudhNUS](https://github.com/AnirudhNUS)) - Physics modeling and dynamics calculations
+- **Pradhyun** ([@jailcode](https://github.com/jailcode)) - System architecture and integration
+- **Vaishnav** ([@Thebroken1](https://github.com/Thebroken1)) - Algorithm development and testing
+
+**Repository:** [github.com/jailcode/Aerospace-Hackathon](https://github.com/jailcode/Aerospace-Hackathon)
+
+---
+
+## References
+
+- Momentum Aerospace Hackathon Challenge
+- Modern Control Theory (Ogata)
+- Rocket Propulsion Elements (Sutton & Biblarz)
+- PID Control Implementation and Tuning (Åström & Hägglund)
+
+---
+
+**Built for aerospace engineering excellence by a dedicated team** 🚀
