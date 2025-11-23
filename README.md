@@ -2,7 +2,6 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![Language](https://img.shields.io/badge/language-C-blue.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-yellow.svg)]()
 
 > **Cascaded PID Control System for Thrust Vector Control (TVC)**  
 > Developed for **Momentum Aerospace** Hackathon Challenge
@@ -204,9 +203,9 @@ delta_time = 0.1;         // seconds (10 Hz)
 
 ```
 ┌─────────────────────────────────────┐
-│  OUTER LOOP (Attitude Control)     │
+│  OUTER LOOP (Attitude Control)      │
 │                                     │
-│  setpoint[0,0,0] ──► angle_error   │
+│  setpoint[0,0,0] ──► angle_error    │
 │                           │         │
 │                    angle_Kp × error │
 │                           │         │
@@ -216,10 +215,10 @@ delta_time = 0.1;         // seconds (10 Hz)
                 │
                 ▼
 ┌─────────────────────────────────────┐
-│  INNER LOOP (Rate Control)         │
+│  INNER LOOP (Rate Control)          │
 │                                     │
-│  Sensor ──► Filter ──► PID ──►     │
-│  Torque ──► Gimbal ──► Servo       │
+│  Sensor ──► Filter ──► PID ──►      │
+│  Torque ──► Gimbal ──► Servo        │
 └─────────────────────────────────────┘
 ```
 
@@ -346,7 +345,6 @@ void write_hardware_servos(double pitch, double yaw, double roll)
 
 - **[IMPLEMENTATION.md](IMPLEMENTATION.md)** - Detailed technical documentation
 - **[task.md](task.md)** - Original challenge requirements
-- **[tasks_for_me.md](tasks_for_me.md)** - Implementation task breakdown
 
 ---
 
@@ -371,19 +369,6 @@ Checks if control gains are appropriate:
 
 Contributions welcome! This is an open hackathon project.
 
-### Development Guidelines
-
-1. Follow existing code style (K&R)
-2. Comment complex algorithms
-3. Test with realistic sensor data
-4. Update documentation for changes
-
----
-
-## 📝 License
-
-MIT License - Free to use for educational and commercial purposes.
-
 ---
 
 ## 👥 Contributors
@@ -392,22 +377,11 @@ This project was developed as a team effort during the Aerospace Hackathon:
 
 | Name | GitHub Username | Role |
 |------|----------------|------|
-| **Tanmay Pandya** | [@tpandya42](https://github.com/tpandya42) | Control Systems & Implementation |
-| **Anirudh Agarwal** | [@AnirudhNUS](https://github.com/AnirudhNUS) | Physics & Dynamics |
-| **Pradhyun** | [@jailcode](https://github.com/jailcode) | Architecture & Integration |
-| **Vaishnav** | [@Thebroken1](https://github.com/Thebroken1) | Algorithms & Testing |
+| **Tanmay Pandya** | [@tpandya42](https://github.com/tpandya42) | 
+| **Anirudh Agarwal** | [@AnirudhNUS](https://github.com/AnirudhNUS) |
+| **Pradhyun** | [@jailcode](https://github.com/jailcode) |
+| **Vaishnav** | [@Thebroken1](https://github.com/Thebroken1) |
 
----
-
-## 🙏 Acknowledgments
-
-**Repository:** [github.com/jailcode/Aerospace-Hackathon](https://github.com/jailcode/Aerospace-Hackathon)  
-**Branch:** `tan`
-
-**Special Thanks:**
-- **Momentum Aerospace** - For providing this exciting challenge
-- **Hackathon Organizers** - For the opportunity and support
-- **Open-source Aerospace Community** - For inspiration and resources
 
 ---
 
@@ -420,12 +394,5 @@ For technical questions:
 
 ---
 
-## 🔗 Related Projects
-
-- [OpenRocket](http://openrocket.info/) - Flight simulation
-- [ArduPilot](https://ardupilot.org/) - Open-source autopilot
-- [BetaFlight](https://betaflight.com/) - Flight controller firmware
-
----
 
 **Built with precision engineering for aerospace applications** 🚀🛰️
