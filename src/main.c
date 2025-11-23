@@ -6,18 +6,20 @@ void	integral_windup(int axis, int integral_max);
 double	integral[3] = {0};
 double	integral_max = 5;
 double	prev_error[3] = {0};
+
+double	thrust = 7890; // N
+
 // PID gains
 double	Kp = 1.0f;
 double	Ki = 0.0f;
 double	Kd = 0.1f;
 
-double	angle_Kp;
+double	angle_Kp = 1.0;
 
 double	outer_setpoint[3] = {0.0, 0.0, 0.0};
-//double	inner_setpoint[3];
-
+// double	inner_setpoint[3];
 // Physical paramters
-//double	thrust = 30.0;
+// double	thrust = 30.0;
 double	MAX_u_value = 10.0;
 double	Ixx = 13.452;
 double	Iyy = 13.452;
@@ -82,6 +84,28 @@ double	apply_filter_gyro(int axis, double measurement)
 	return (filtered_gyro[axis]);
 }
 
+double	saturation_check(double theta, double theta_max)
+{
+	if (theta > theta_max)
+		theta = theta_max;
+	if (theta < -theta_max)
+		theta = -theta_max;
+	return (theta);
+}
+
+double	torque_to_gimbal_angle(double expected_alpha, double axis_MOI)
+{
+	double	tau_required;
+	double	theta;
+
+	// since torque is = alpha * MOI;
+	tau_required = expected_alpha * axis_MOI;
+	// gimbal produces torque so: tau = thrust * h_COM * sin(theta)
+	theta = asin(fmax(fmin(tau_required / (thrust * h_COM), 1.0), -1.0));
+	theta = saturation_check(theta, theta_max);
+	return (theta);
+}
+
 void	run_inner_loop(float dt)
 {
 	t_sensor_data	data;
@@ -92,6 +116,7 @@ void	run_inner_loop(float dt)
 	double			u;
 	double			angle;
 	double			angle_error;
+    double          gimbal_angle;
 
 	if (dt <= 0)
 		dt = 0.01;
@@ -106,17 +131,21 @@ void	run_inner_loop(float dt)
 			angle = data.accel[axis];
 			angle_error = outer_setpoint[axis] - angle;
 			inner_setpoint[axis] = angle_Kp * angle_error;
-
-
-			rate_measurement = data.gyro[axis];
+			
+            rate_measurement = apply_filter_gyro(axis, data.gyro[axis]);
 			u = PID(axis, inner_setpoint[axis], rate_measurement, dt);
-			u = normalise(u, MAX_u_value, -1, 1);
-			if (u > MAX_u_value)
-				u = MAX_u_value;
-			if (u < -MAX_u_value)
-				u = -MAX_u_value;
-			printf("Axis %d: gyro=%f PID output=%f\n", axis, rate_measurement,
-				u);
+			
+            if (axis == 0)
+                gimbal_angle = torque_to_gimbal_angle(u, Ixx);
+            else if (axis == 1)
+                gimbal_angle = torque_to_gimbal_angle(u, Iyy);
+            else gimbal_angle = torque_to_gimbal_angle(u, Izz);
+
+            u = normalise(gimbal_angle, MAX_u_value, -1, 1);
+			//u = saturation_check(u, MAX_u_value);
+
+			printf("Axis %d: gyro=%f rate_cmd=%f gimbal_angle%f servo_norm=%f\n", axis, rate_measurement,
+				inner_setpoint[axis], gimbal_angle, u);
 		}
 		usleep((unsigned int)(dt * 1000000));
 	}

@@ -5,7 +5,7 @@
 double g = 9.81; //m^2
 double mass = 64.4; //kg
 double dry_mass = 31.8; //kg
-double thrust = 7890; //N
+
 double burn_time = 5.15; //s
 double rocket_lenght = 169; //cm
 double rocket_diameter = 20; //cm
