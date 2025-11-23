@@ -130,7 +130,7 @@ void calculate_inner_setpoint(int current_axis, double *inner_setpoint, t_sensor
     inner_setpoint[current_axis] = angle_Kp * (outer_setpoint[current_axis]);
 }
 
-calculate_gimbal_angle(double u, double current_axis)
+double calculate_gimbal_angle(double u, double current_axis)
 {
     double gimbal_angle;
     if (current_axis == 0)
