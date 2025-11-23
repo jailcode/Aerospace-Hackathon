@@ -41,7 +41,7 @@ int read_sensor_line(FILE *gyro_file, FILE *accel_file, t_sensor_data *data)
     if (!fgets(accel_line, sizeof(accel_line), accel_file))
         return 0;
     
-    // Parse gyroscope data (angles)
+    // gyroscope data (angles)
     if (sscanf(gyro_line, "%lf,%lf,%lf", 
                &data->gyro[0], &data->gyro[1], &data->gyro[2]) != 3)
     {
@@ -49,7 +49,7 @@ int read_sensor_line(FILE *gyro_file, FILE *accel_file, t_sensor_data *data)
         return 0;
     }
     
-    // Parse accelerometer data (angular acceleration)
+    // accelerometer data (angular acceleration)
     if (sscanf(accel_line, "%lf,%lf,%lf",
                &data->accel[0], &data->accel[1], &data->accel[2]) != 3)
     {

@@ -74,5 +74,6 @@ void                process_attitude(t_attitude_state *state, t_sensor_data *sen
                                     t_pid_controller *pid, t_actuator_output *output, int first_loop);
 void                write_output(FILE *output_file, t_actuator_output *output);
 void                run_control_loop();
+void differential(double current,double expected);
 
 #endif
