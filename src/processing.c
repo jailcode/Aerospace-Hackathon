@@ -83,7 +83,7 @@ void write_output(FILE *output_file, t_actuator_output *output)
             output->gimbal_x, output->gimbal_y, output->fin_angle);
 }
 
-void run_control_loop()
+void run_control_loop(int dt)
 {
     // Open sensor input files
     FILE *gyro_file = open_sensor_file("gyroscope.txt", "r");
@@ -118,7 +118,7 @@ void run_control_loop()
     printf("----------|----------|----------|-----------|----------\n");
     
     // Main processing loop - read sensor data line by line
-    while (read_sensor_line(gyro_file, accel_file, &sensor))
+    while (1)
     {
         // Process all 3 attitude axes simultaneously
         process_attitude(state, &sensor, pid, &output, first_loop);
@@ -135,7 +135,8 @@ void run_control_loop()
         iteration++;
         
         // Small delay to simulate real-time processing
-        wait_for_sensor_signal();
+        sleep(dt);
+        //wait_for_sensor_signal();
     }
     
     printf("\nControl loop completed. %d iterations processed.\n", iteration);

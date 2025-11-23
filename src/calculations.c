@@ -15,6 +15,13 @@ double delta_time(double final_time, double initial_time){
     double delta_time = final_time - initial_time;
     return delta_time;
 }
+#include <stdio.h>
+#include <math.h>
+
+/*double calculate_magnitude(double x, double y)
+{
+    return sqrt(x * x + y * y);
+}*/
 
 double delta_acceleration(double final_velocity, double initial_velocity){
     double delta_acceleration = final_velocity - initial_velocity;
