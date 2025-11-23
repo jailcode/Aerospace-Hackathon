@@ -53,7 +53,7 @@ double center_of_mass_calculation(){
 
 }
 
-double moment_of_inertia(){};
+double moment_of_inertia(){}; //placeholder
 double torque(angular_acceleration, moment_of_inertia){
 
     double torque = angular_acceleration * moment_of_inertia;
