@@ -3,14 +3,14 @@
 void parse_sensor_data(double *gyroscope, double *accelerometer, const char *data){
     //Ax,Ay,Az (Angular) & ax,ay,az(Linear) (linear for ax and ay is not needed)
 
-    if(sscanf(data,"%lf,%lf,%lf,%lf,%lf,%lf",
+    if(sscanf(data,"%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf%lf",
         &gyroscope[0],&gyroscope[1],&gyroscope[2],
-        &gyroscope[3],&gyroscope[4],&gyroscope[5],
+        //&gyroscope[3],&gyroscope[4],&gyroscope[5],
         &accelerometer[0],&accelerometer[1],&accelerometer[2],
-        &accelerometer[3],&accelerometer[4],&accelerometer[5] != 6
-    ))
+        &accelerometer[3],&accelerometer[4],&accelerometer[5]) != 6
+    )
     {
-        fprint(stderr,"Data Parsing Error");
+        fprintf(stderr,"Data Parsing Error");
     };
 
 }

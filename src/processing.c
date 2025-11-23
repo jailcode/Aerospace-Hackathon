@@ -1,5 +1,5 @@
 #include "../includes/pid.h"
-
+/*
 void process_attitude(t_attitude_state *state, t_sensor_data *sensor, 
                       t_pid_controller *pid, t_actuator_output *output, int first_loop)
 {
@@ -149,3 +149,4 @@ void run_control_loop(int dt)
     free(pid);
     free(state);
 }
+*/

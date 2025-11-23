@@ -1,5 +1,6 @@
 #include "../includes/pid.h"
-#include "math.h"
+#include <math.h>
+
 // ax ay az (linear accel) Ax Ay Az(angular accel)  assuming all 6 are ready to use
 double g = 9.81; //m^2
 double mass = 64.4; //kg
@@ -15,8 +16,6 @@ double delta_time(double final_time, double initial_time){
     double delta_time = final_time - initial_time;
     return delta_time;
 }
-#include <stdio.h>
-#include <math.h>
 
 /*double calculate_magnitude(double x, double y)
 {
@@ -37,7 +36,7 @@ double delta_surface_altitude(double final_surface_altitude, double initital_sur
     return delta_surface_altitude;
 }
 
-double angular_velocity(delta_angular_position, delta_time){
+double angular_velocity(double delta_angular_position,double delta_time){
     double angular_velocity = delta_angular_position / delta_time;
     return angular_velocity;
 }
@@ -48,33 +47,35 @@ double delta_angular_velocity(double final_angular_velocity, double initial_angu
     double delta_angular_velocity = final_angular_velocity - initial_angular_velocity;
     return delta_angular_velocity; 
 }
-double angular_acceleration(delta_angular_velocity, delta_time){
+double angular_acceleration(double delta_angular_velocity,double delta_time){
     double angular_acceleration = delta_angular_velocity / delta_time;
-}
 
+    return (angular_acceleration);
+}
+/*
 double magnitude_of_change(double linear_accelration){};
 
 double thrust_applied_from_motor(){};
 
 double center_of_mass_calculation(){
 
-}
+}*/
 
-double moment_of_inertia(){}; //placeholder
-double torque(angular_acceleration, moment_of_inertia){
+//double moment_of_inertia(){}; //placeholder
+double torque(double angular_acceleration,double  moment_of_inertia){
 
     double torque = angular_acceleration * moment_of_inertia;
     return torque;
 
-};
-double acceleration(moment_of_inertia,torque){};
+}
+//double acceleration(moment_of_inertia,torque){};
 double net_force(double mass , double acceleration){
     return mass*acceleration;
 }
 
-double drag(double fluid_density, double velocity){};//incomplete
+//double drag(double fluid_density, double velocity){};//incomplete
 
-double thrust_to_weight_ratio ( mass,gravity, thrust){
+double thrust_to_weight_ratio (double  mass,double gravity,double  thrust){
     double twr = thrust/(mass*gravity);
     return twr;
 }
