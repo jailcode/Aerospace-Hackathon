@@ -55,15 +55,7 @@ double              pd_controller(double error, double derivative, double Kp, do
 long long           get_current_time();
 long long           get_time_difference(long long old_time, long long new_time);
 
-// Calculation functions (calculations.c)
-
-double delta_time(double initial_time, double final_time);
-double delta_acceleration(double initial_velocity, double final_velocity);
-double delta_angular_position(double initial_angular_position, double final_angular_position);
-double angular_velocity(double delta_angular_position, double delta_time);
-double delta_angular_velocity(double initial_angular_velocity, double final_angular_velocity);
-double angular_acceleration(double delta_angular_velocity, double delta_time);
-// Sensor functions (sensor.c)
+// Sensor functions
 void                parse_sensor_data(double *gyro, double *accel, const char *data);
 void                wait_for_sensor_signal();
 int                 read_sensor_line(FILE *gyro_file, FILE *accel_file, t_sensor_data *data);
@@ -74,6 +66,8 @@ void                process_attitude(t_attitude_state *state, t_sensor_data *sen
                                     t_pid_controller *pid, t_actuator_output *output, int first_loop);
 void                write_output(FILE *output_file, t_actuator_output *output);
 void                run_control_loop();
-void differential(double current,double expected);
 
+//test function
+void differential(double current,double expected);
+double	saturation_check(double theta, double theta_max);
 #endif
