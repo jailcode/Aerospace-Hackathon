@@ -2,7 +2,7 @@
 #include <math.h>
 
 void	integral_windup(int current_axis, int integral_max);
-
+double	saturation_check(double theta, double theta_max);
 double	integral[3] = {0};
 double	integral_max = 5;
 double	previous_error[3] = {0};
@@ -14,7 +14,7 @@ int count = 0;
 // PID gains
 double	Kp = 1.0f; //proportional
 double	Ki = 0.0f; //integral
-double	Kd = 0.2f; //derivative
+double	Kd = 0.1f; //derivative
 
 double	angle_Kp = 1.0;
 
@@ -42,7 +42,8 @@ double	PID(int current_axis, double setpoint, double measurement, double delta_t
 	double	derivative;
 	double	D;
 
-	current_error = setpoint - measurement;
+	//current_error = setpoint - measurement;
+    current_error = measurement - setpoint;
 	P = Kp * current_error;
 	integral[current_axis] += current_error * delta_time;
 	I = Ki * integral[current_axis];
@@ -172,7 +173,7 @@ void	run_loop(float delta_time)
             //inter_setpoint is the angular acceleration we need to get there
 			calculate_inner_setpoint(current_axis, inner_setpoint, data);
 
-
+ 
             rate_measurement = apply_filter_gyro(current_axis, data.gyro[current_axis]);
 			desired_angular_acceleration = PID(current_axis, inner_setpoint[current_axis], rate_measurement, delta_time);
 			
